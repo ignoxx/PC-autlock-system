@@ -1,0 +1,5 @@
+{
+    "board": "arduino:avr:leonardoeth",
+    "port": "COM9",
+    "sketch": "pc_autolock_system.ino"
+}
