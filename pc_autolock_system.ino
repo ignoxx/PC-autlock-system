@@ -1,16 +1,20 @@
-#include <HCSR04.h>
 #include "Keyboard.h"
+#include "src/HCSR04.h";
 
 enum OS { WIN, MAC, LINUX };
-UltraSonicDistanceSensor sensor(12, 13);
+HCSR04 sensor(12, 13); // initialisation class HCSR04 (trig pin , echo pin)
 
+
+// 
 const OS targetOS = OS::LINUX;
-const float maxDistanceDifferenceAllowed = 25;     // % (percent)
-const double maxAllowedDistance = 45;
-const float timeToLockScreenAfterDetection = 3000; // 3 seconds
-unsigned long maxDistanceDetectionTime;            // in ms
+const float maxDistanceDifferenceAllowed = 25;    // % (percent)
+const float baseAllowedDistance = 80;             // cm
+const long timeToLockScreenAfterDetection = 4000; // ms
+long scanningSpeed = 1000;                        // ms
+unsigned long maxDistanceDetectionTime;           // ms
 int actualDistance;
 bool lockTimerStarted = false;
+bool isScreenLocked = false;
 
 void setup() {
   Serial.begin(9600);
@@ -18,61 +22,48 @@ void setup() {
 }
 
 void loop() {
+  actualDistance = sensor.dist();
+  Serial.println(actualDistance);
 
-  Serial.println(sensor.measureDistanceCm());
-  delay(1000);
+  if (!lockTimerStarted && shouldEnableLockTimer()) {
+    lockTimerStarted = true;
+    maxDistanceDetectionTime = millis();
+    Serial.println("User is out of range, lock timer started.");
+  }
+
+  else if (lockTimerStarted && !shouldEnableLockTimer()) {
+    Serial.println("User is back in range, lock timer disabled.");
+    lockTimerStarted = false;
+    scanningSpeed = 1000; // 1s
+    isScreenLocked = false;
+  }
+
+  if (shouldLockScreen()) {
+    Serial.println("Lock screen.");
+
+    // if (!isScreenLocked)
+    //   lockScreen();
+
+    scanningSpeed = 10000; // 10s
+  }
+
+  delay(scanningSpeed);
 }
-// void loop() {
-//   actualDistance = getActualDistance();
-//   Serial.println(actualDistance);
-//   if (!lockTimerStarted && shouldEnableLockTimer()) {
-//     lockTimerStarted = true;
-//     maxDistanceDetectionTime = millis();
-//     Serial.println("User is out of range, lock timer started.");
-//   }
-
-//   else if (!shouldEnableLockTimer()) {
-//     Serial.println("User is back in range, lock timer disabled.");
-//     lockTimerStarted = false;
-//   }
-
-//   if (shouldLockScreen()) {
-//     // lockScreen();
-//     Serial.println("Lock screen.");
-//   }
-
-//   delay(2000);
-// }
 
 bool shouldLockScreen() {
 
   auto currentTime = millis() - maxDistanceDetectionTime;
-
-  //Serial.print("..currentTime: "); Serial.print(currentTime); Serial.print("..lockTimerStarted: "); Serial.print(lockTimerStarted);
-
   return lockTimerStarted && currentTime > timeToLockScreenAfterDetection;
 }
 
 bool shouldEnableLockTimer() {
-  int allowedDistance = maxAllowedDistance * 1 + (maxDistanceDifferenceAllowed/100);
-  
-  //Serial.print("actualDistance: "); Serial.print(actualDistance);
-  //Serial.print("..allowedDistance: "); Serial.print(allowedDistance); 
+  int allowedDistance =
+      baseAllowedDistance * (1 + (maxDistanceDifferenceAllowed / 100));
   return actualDistance > allowedDistance;
 }
 
-int getActualDistance() {
-  double distanceSum = 0;
-
-  for (byte i = 0; i < 10; i++) {
-    distanceSum += sensor.measureDistanceCm();
-    delay(10);
-  }
-
-  return distanceSum / 10;
-}
-
 void lockScreen() {
+  isScreenLocked = true;
   Serial.println("Pressing..");
 
   switch (targetOS) {
@@ -100,4 +91,3 @@ void lockScreen() {
     break;
   }
 }
-

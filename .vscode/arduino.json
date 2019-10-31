@@ -1,6 +1,6 @@
 {
     "board": "arduino:avr:leonardoeth",
-    "port": "/dev/ttyACM1",
+    "port": "COM9",
     "sketch": "pc_autolock_system.ino",
     "programmer": "AVR ISP"
 }
