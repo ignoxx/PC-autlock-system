@@ -27,24 +27,28 @@ float HCSR04::dist(int n) const {
   digitalWrite(this->out, HIGH);
   delayMicroseconds(10);
 
-  // Set trigPin to LOW, to stop sending the sound wave and start/stop the duration to travel back
+  // Set trigPin to LOW, to stop sending the sound wave and start/stop the
+  // duration to travel back
   digitalWrite(this->out, LOW);
 
   noInterrupts();
-   /*
-    When sound waves reach receiver, it turns the echoPin HIGH for the same duration.
-    pulseIn(), function waits for echoPin to go into HIGH and then stops timing when it switches to LOW state.
-    Read in the echoPin input, as the roundtrip duration for ultra sound wave to reach back from detected object.
-  */
+  /*
+   When sound waves reach receiver, it turns the echoPin HIGH for the same
+   duration. pulseIn(), function waits for echoPin to go into HIGH and then
+   stops timing when it switches to LOW state. Read in the echoPin input, as the
+   roundtrip duration for ultra sound wave to reach back from detected object.
+ */
   long d = pulseIn(this->echo[n], HIGH);
   interrupts();
 
   /*
-    Let 'd' be the distance, and speed of sound as 343 m/s Or 0.034cm/µs, there distance will equal
-    duration multiplied by speed of sound. As the sound wave has to travel to the object and back to
-    the sensor echoPin, we need to only consider half the duration to obect in front.
-    distance to object = (traveltime/2) x speed of sound
+    Let 'd' be the distance, and speed of sound as 343 m/s Or 0.034cm/µs, there
+    distance will equal duration multiplied by speed of sound. As the sound wave
+    has to travel to the object and back to the sensor echoPin, we need to only
+    consider half the duration to obect in front. distance to object =
+    (traveltime/2) x speed of sound
   */
-  return (d * 0.0343) / 2;;
+  return (d * 0.0343) / 2;
+  ;
 }
 float HCSR04::dist() const { return this->dist(0); }

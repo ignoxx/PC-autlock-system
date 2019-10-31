@@ -1,17 +1,44 @@
 #include "Keyboard.h"
 #include "src/HCSR04.h";
 
+#define DEV_MODE
+
+/*
+  HCSR04(trigger, echo)
+  trigger     - trigger pin
+  echo        - echo pin
+*/
+HCSR04 sensor(12, 13);
+
 enum OS { WIN, MAC, LINUX };
-HCSR04 sensor(12, 13); // initialisation class HCSR04 (trig pin , echo pin)
 
-
-// 
+/*
+  Each OS has its own Key shortcuts for locking the screen
+  Set the target OS here (Make the selection user changeable)
+*/
 const OS targetOS = OS::LINUX;
-const float maxDistanceDifferenceAllowed = 25;    // % (percent)
-const float baseAllowedDistance = 80;             // cm
+
+/*
+  The base distance between the user and the device
+  Needs to be adjusted for each workplace (Automate this)
+*/
+const float baseAllowedDistance = 80; // cm
+
+/*
+  Max distance allowed before it triggers to lock screen
+  Value depends procentually on baseAllowedDistance
+*/
+const float maxDistanceDifferenceAllowed = 25; // % (percent)
+
 const long timeToLockScreenAfterDetection = 4000; // ms
-long scanningSpeed = 1000;                        // ms
-unsigned long maxDistanceDetectionTime;           // ms
+
+/*
+  The speed(in ms) for measuring the distance
+  if the screen is locked, speed is slowed down.
+*/
+long scanningSpeed = 1000; // ms
+
+unsigned long maxDistanceDetectionTime; // ms
 int actualDistance;
 bool lockTimerStarted = false;
 bool isScreenLocked = false;
@@ -23,7 +50,9 @@ void setup() {
 
 void loop() {
   actualDistance = sensor.dist();
-  Serial.println(actualDistance);
+  Serial.print("Measured distance:\t");
+  Serial.print(actualDistance);
+  Serial.print("\n");
 
   if (!lockTimerStarted && shouldEnableLockTimer()) {
     lockTimerStarted = true;
@@ -32,18 +61,20 @@ void loop() {
   }
 
   else if (lockTimerStarted && !shouldEnableLockTimer()) {
-    Serial.println("User is back in range, lock timer disabled.");
     lockTimerStarted = false;
     scanningSpeed = 1000; // 1s
     isScreenLocked = false;
+
+    Serial.println("User is back in range, lock timer disabled.");
   }
 
   if (shouldLockScreen()) {
-    Serial.println("Lock screen.");
+    Serial.println("Lock screen..");
 
-    // if (!isScreenLocked)
-    //   lockScreen();
-
+#ifndef DEV_MODE
+    if (!isScreenLocked)
+      lockScreen();
+#endif
     scanningSpeed = 10000; // 10s
   }
 
@@ -67,7 +98,11 @@ void lockScreen() {
   Serial.println("Pressing..");
 
   switch (targetOS) {
+  /*
+    Windows and Linux use the same shortcut
+  */
   case OS::WIN:
+  case OS::LINUX:
     Serial.print("on Windows..");
 
     Keyboard.press(KEY_LEFT_GUI);
@@ -79,13 +114,11 @@ void lockScreen() {
 
   case OS::MAC:
     Serial.print("on Mac..");
-    break;
-
-  case OS::LINUX:
-    Serial.print("on Linux..");
     Keyboard.press(KEY_LEFT_GUI);
     delay(10);
-    Keyboard.write('l');
+    Keyboard.press(KEY_LEFT_CTRL);
+    delay(10);
+    Keyboard.write('q');
     delay(10);
     Keyboard.releaseAll();
     break;
