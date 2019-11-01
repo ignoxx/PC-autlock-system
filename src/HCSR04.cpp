@@ -49,6 +49,5 @@ float HCSR04::dist(int n) const {
     (traveltime/2) x speed of sound
   */
   return (d * 0.0343) / 2;
-  ;
 }
 float HCSR04::dist() const { return this->dist(0); }
