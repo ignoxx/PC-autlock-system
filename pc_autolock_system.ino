@@ -1,7 +1,8 @@
 #include "Keyboard.h"
-#include "src/HCSR04.h";
+#include "src/HCSR04.h"
+#include "src/ArduinoSort.h"
 
-#define DEV_MODE
+// #define DEV_MODE
 
 /*
   HCSR04(trigger, echo)
@@ -30,7 +31,7 @@ const float baseAllowedDistance = 80; // cm
 */
 const float maxDistanceDifferenceAllowed = 25; // % (percent)
 
-const long timeToLockScreenAfterDetection = 4000; // ms
+const long timeToLockScreenAfterDetection = 5000; // ms
 
 /*
   The speed(in ms) for measuring the distance
@@ -49,7 +50,8 @@ void setup() {
 }
 
 void loop() {
-  actualDistance = sensor.dist();
+  actualDistance = getFilteredDistance();
+
   Serial.print("Measured distance:\t");
   Serial.print(actualDistance);
   Serial.print("\n");
@@ -71,14 +73,31 @@ void loop() {
   if (shouldLockScreen()) {
     Serial.println("Lock screen..");
 
-#ifndef DEV_MODE
+  #ifndef DEV_MODE
     if (!isScreenLocked)
       lockScreen();
-#endif
+  #endif
     scanningSpeed = 10000; // 10s
   }
 
   delay(scanningSpeed);
+}
+
+int getFilteredDistance() {
+  int numOfMeasurings = 12; 
+  int measurings[numOfMeasurings];
+
+  // Collect multiple measurings
+  for (int i = 0; i < numOfMeasurings; i++)
+  {
+    measurings[i] = sensor.dist();
+  }
+
+  // Get the median from our measurings
+  sortArray(measurings, numOfMeasurings);
+  
+  // return the median value
+  return measurings[numOfMeasurings/2];
 }
 
 bool shouldLockScreen() {
